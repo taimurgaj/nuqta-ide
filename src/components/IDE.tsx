@@ -531,6 +531,19 @@ export default function IDE() {
     openTab(path, 'بے نام.urdu', null, '')
   }
 
+  function handleResetSample() {
+    if (!activeTabPath?.startsWith('__sample__')) return
+    const sample = SAMPLE_PROGRAMS.find(s => `__sample__${s.file}` === activeTabPath)
+    if (!sample) return
+    tabContentsRef.current[activeTabPath] = sample.code
+    setCode(sample.code)
+    setLines([])
+  }
+
+  function handleCopyOutput() {
+    navigator.clipboard.writeText(lines.map(l => (l.kind === 'input' ? `← ${l.text}` : l.text)).join('\n'))
+  }
+
   async function handleDeleteNode(node: TreeNode) {
     if (!window.confirm(`"${node.name}" کو حذف کریں؟`)) return
     try {
@@ -567,7 +580,7 @@ export default function IDE() {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-3 bg-gray-900 border-b border-gray-800 shrink-0" dir="rtl">
         <div className="flex items-center gap-3">
-          <h1 className="text-base font-bold tracking-wide text-blue-400">اردو آئی ڈی ای</h1>
+          <h1 className="text-base font-bold tracking-wide text-blue-400">نقطہ ادا</h1>
           {/* Student name badge — only shown when embedded in edtech */}
           {embeddedMode && studentNameParam && (
             <span className="text-xs text-green-400 bg-green-950 px-2 py-0.5 rounded border border-green-800">
@@ -582,6 +595,16 @@ export default function IDE() {
           >
             تاثر
           </button>
+          {/* Reset — only meaningful for a sample program, restores its original code */}
+          {activeTabPath?.startsWith('__sample__') && (
+            <button
+              onClick={handleResetSample}
+              className="text-xs text-gray-500 hover:text-gray-300 border border-gray-700 hover:border-gray-500 px-2.5 py-1 rounded transition-colors"
+              title="نمونہ اصل حالت میں واپس لائیں"
+            >
+              بحال کریں
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -732,7 +755,18 @@ export default function IDE() {
 
             {/* Output panel */}
             <div style={{ width: outputWidth }} className="shrink-0 flex flex-col border-r border-gray-800">
-              <div className="px-4 py-1.5 text-xs text-gray-500 bg-gray-900 border-b border-gray-800 shrink-0" dir="rtl">نتیجہ</div>
+              <div className="flex items-center justify-between px-4 py-1.5 bg-gray-900 border-b border-gray-800 shrink-0" dir="rtl">
+                <span className="text-xs text-gray-500">نتیجہ</span>
+                {lines.length > 0 && (
+                  <button
+                    onClick={handleCopyOutput}
+                    className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                    title="نتیجہ کاپی کریں"
+                  >
+                    کاپی کریں
+                  </button>
+                )}
+              </div>
               <div dir="rtl" className="flex-1 bg-gray-900 font-mono text-sm p-4 overflow-y-auto">
                 {lines.length === 0 && !running && (
                   <p className="text-gray-600 text-xs">کوڈ چلانے کے لیے چلاؤ دبائیں</p>
