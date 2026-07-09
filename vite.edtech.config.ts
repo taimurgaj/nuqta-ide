@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   base: '/ide/',
   build: {
-    outDir: resolve(__dirname, '../Urdu Tech/edtech/public/ide'),
+    outDir: resolve(__dirname, '../../edtech/public/ide'),
     emptyOutDir: true,
   },
 })

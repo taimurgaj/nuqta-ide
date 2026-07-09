@@ -2,11 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import Editor from './Editor'
 import Explorer from './Explorer'
 import { FeedbackModal } from './FeedbackModal'
-import { tokenize, LexError } from '../lang/lexer'
-import { parse, ParseError } from '../lang/parser'
-import { interpret, RuntimeError, CancelledError, type IO } from '../lang/interpreter'
-import { toUrduNumerals } from '../lang/utils'
 import { type TreeNode, type FileNode, type DirNode } from '../types'
+import { trackEvent } from '../lib/track'
 
 type Line = { kind: 'output'; text: string } | { kind: 'input'; text: string }
 
@@ -127,11 +124,14 @@ export default function IDE() {
   const [explorerWidth, setExplorerWidth] = useState(224)
   const [outputWidth, setOutputWidth] = useState(360)
 
-  // Embedded (edtech assignment) mode — driven by URL params only
+  // Embedded mode — driven by URL params only. Triggered by either an edtech
+  // assignment or a learn.nuqta.dev lesson (both are single-buffer sessions
+  // with no reason to show the multi-file explorer/tabs UI).
   const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
   const assignmentId = urlParams.get('assignmentId') ?? ''
+  const lessonSlugParam = urlParams.get('lessonSlug') ?? ''
   const studentNameParam = urlParams.get('studentName') ?? ''
-  const embeddedMode = Boolean(assignmentId)
+  const embeddedMode = Boolean(assignmentId) || Boolean(lessonSlugParam)
 
   const apiUrl = import.meta.env.VITE_API_URL as string | undefined
 
@@ -165,7 +165,7 @@ export default function IDE() {
   // Embedded mode: load draft and open the assignment tab on mount
   useEffect(() => {
     if (!assignmentId) return
-    const draft = localStorage.getItem(`ide-draft-${assignmentId}`) ?? 'لکھو("سلام دنیا")؛\n'
+    const draft = localStorage.getItem(`ide-draft-${assignmentId}`) ?? ''
     const path = `__assignment__${assignmentId}`
     tabContentsRef.current[path] = draft
     setTabs([{ path, name: 'مشق.urdu', handle: null }])
@@ -371,11 +371,13 @@ export default function IDE() {
     setInputValue('')
     cancelledRef.current = false
     resolver.current.fn = null
+    trackEvent('code_run', { embedded: embeddedMode })
 
     if (apiUrl) {
       await runViaApi(apiUrl, code)
     } else {
-      await runViaTypeScript(code)
+      setLines([{ kind: 'output', text: '⚠ غلطی: سرور کا پتہ (VITE_API_URL) سیٹ نہیں ہے' }])
+      setRunning(false)
     }
   }
 
@@ -439,38 +441,6 @@ export default function IDE() {
         }
 
         break
-      }
-    } finally {
-      setRunning(false)
-      setWaitingForInput(false)
-    }
-  }
-
-  // ── TypeScript interpreter (offline fallback) ───────────────────────────────
-
-  async function runViaTypeScript(currentCode: string) {
-    const io: IO = {
-      print: (text) => setLines(prev => [...prev, { kind: 'output', text }]),
-      input: () => {
-        setWaitingForInput(true)
-        return new Promise<string>(resolve => { resolver.current.fn = resolve })
-      },
-    }
-
-    try {
-      const tokens = tokenize(currentCode)
-      const program = parse(tokens)
-      await interpret(program, io, () => cancelledRef.current)
-    } catch (e) {
-      if (e instanceof CancelledError) {
-        setLines(prev => [...prev, { kind: 'output', text: '◼ روک دیا گیا' }])
-      } else {
-        let msg = 'نامعلوم غلطی'
-        let lineNum: number | null = null
-        if (e instanceof LexError || e instanceof ParseError) { msg = e.message; lineNum = e.line }
-        else if (e instanceof RuntimeError) { msg = e.message }
-        const linePart = lineNum !== null ? ` — سطر ${toUrduNumerals(lineNum)}` : ''
-        setLines(prev => [...prev, { kind: 'output', text: `⚠ غلطی: ${msg}${linePart}` }])
       }
     } finally {
       setRunning(false)
@@ -580,7 +550,14 @@ export default function IDE() {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-3 bg-gray-900 border-b border-gray-800 shrink-0" dir="rtl">
         <div className="flex items-center gap-3">
-          <h1 className="text-base font-bold tracking-wide text-blue-400">نقطہ ادا</h1>
+          <a
+            href="https://nuqta.dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-base font-bold tracking-wide text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            نقطہ اڈا
+          </a>
           {/* Student name badge — only shown when embedded in edtech */}
           {embeddedMode && studentNameParam && (
             <span className="text-xs text-green-400 bg-green-950 px-2 py-0.5 rounded border border-green-800">
@@ -673,7 +650,7 @@ export default function IDE() {
           /* Welcome screen */
           <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-8 overflow-y-auto" dir="rtl">
             <div className="max-w-sm w-full">
-              <p className="text-gray-300 text-base font-semibold mb-1">اردو ادا میں خوش آمدید</p>
+              <p className="text-gray-300 text-base font-semibold mb-1">اردو اڈا میں خوش آمدید</p>
               <p className="text-gray-600 text-xs mb-5">شروع کرنے کے لیے ایک آپشن منتخب کریں</p>
 
               {/* Action buttons */}

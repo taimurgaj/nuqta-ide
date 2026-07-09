@@ -154,7 +154,7 @@ export function FeedbackModal({ onClose, getCurrentCode }: Props) {
                 <>
                   {/* Rating */}
                   <div>
-                    <p className="text-xs text-gray-400 mb-2">ادا کیسا لگا؟</p>
+                    <p className="text-xs text-gray-400 mb-2">اڈا کیسا لگا؟</p>
                     <div className="flex gap-2">
                       {RATINGS.map((emoji, i) => (
                         <button
