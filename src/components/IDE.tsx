@@ -552,12 +552,13 @@ export default function IDE() {
         <div className="flex items-center gap-3">
           <a
             href="https://nuqta.dev"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-base font-bold tracking-wide text-blue-400 hover:text-blue-300 transition-colors"
+            className="text-base font-bold tracking-wide text-white hover:text-gray-300 transition-colors"
+            style={{ fontFamily: 'var(--font-urdu), serif' }}
           >
-            نقطہ اڈا
+            نقطہ
           </a>
+          <span className="text-gray-700 text-xs">|</span>
+          <span className="text-sm font-semibold text-gray-300 tracking-wide">اڈا</span>
           {/* Student name badge — only shown when embedded in edtech */}
           {embeddedMode && studentNameParam && (
             <span className="text-xs text-green-400 bg-green-950 px-2 py-0.5 rounded border border-green-800">
